@@ -2,43 +2,34 @@
 #include <SCServo.h>
 #include <imu.h>
 #include <userdefine.h>
-
-#define Gain 10
+#include <motctrl.h>
 
 SMS_STS st;
 
-float dt;
-float pretime;
-
 void setup()
 {
-    Serial1.begin(1000000);
-    Serial.begin(115200);
-    st.pSerial = &Serial1;
+    Serial.begin(9600);
+    /* Motor setup function */
+    //MotSetup();
+    imu_setup();
+
     delay(5000);
 }
 
 void loop()
 {
-    static float diffAng;
+    static float pitch = 0;
+
     st_imu *stp_imu = &stg_imu;
-  
-    static float refAng = 0;
-    static float integral, div, preP= 0;
-    static const float kp = 900;
-    static const float ki = 0;
-    static const float kd = 2;
-    static int actPos, actCur;
+
+    get_imu();
     
-    static float pretime_serial;
+    Serial.println(stp_imu->pitch);
+    delay(300);
     
-    static int counter = 0;
-  
-/*     if (micros() - pretime_serial > 10000)
-    {
-        Serial.print(input);
-        pretime_serial = micros();
-    } */
+
+/*
+    st_imu *stp_imu = &stg_imu;
 
     if (counter < 1000){
 
@@ -70,5 +61,5 @@ void loop()
         Serial.end();
         st.WriteTorq(1, 0);
     }
-
+*/
 }
