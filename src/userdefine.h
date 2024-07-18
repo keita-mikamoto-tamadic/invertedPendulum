@@ -11,6 +11,6 @@
 #define LQRGAIN -5.64
 #define MOTCURGAIN 2439
 
-#define ANGOFFS 0.122  /* 重心ずれの補正 */
+#define ANGOFFS 0.13  /* 重心ずれの補正 */
 
 #endif //_USERDEFINE_H_

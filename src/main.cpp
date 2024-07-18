@@ -10,7 +10,6 @@ static FspTimer fsp_timer;
 
 void timer_callback([[maybe_unused]]timer_callback_args_t *arg);
 
-SMS_STS st;
 
 void setup()
 {
@@ -58,7 +57,7 @@ void loop()
     
     MotTorqWrite(stp_lqr->refTorq, 1);
     MotTorqWrite(-(stp_lqr->refTorq), 2);
-    
+    Serial.println(stp_lqr->refTorq);
     
 
 
