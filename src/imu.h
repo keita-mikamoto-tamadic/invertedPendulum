@@ -11,6 +11,7 @@ typedef struct
     float roll;
 } st_imu;
 extern st_imu stg_imu;
+
 extern void imu_setup(void);
 extern void get_imu(void);
 

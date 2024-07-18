@@ -92,7 +92,7 @@ void SCS::writeBuf(u8 ID, u8 MemAddr, u8 *nDat, u8 nLen, u8 Fun)
 //舵机ID，MemAddr内存表地址，写入数据，写入长度
 int SCS::genWrite(u8 ID, u8 MemAddr, u8 *nDat, u8 nLen)
 {
-	rFlushSCS();
+	//rFlushSCS();
 	writeBuf(ID, MemAddr, nDat, nLen, INST_WRITE);
 	wFlushSCS();
 	return Ack(ID);

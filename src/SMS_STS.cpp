@@ -108,6 +108,7 @@ int SMS_STS::WriteTorq(u8 ID, s16 Torq)
 	Host2SCS(bBuf+3, bBuf+4, Torq);
 	Host2SCS(bBuf+5, bBuf+6, 0);
 	
+
 	return genWrite(ID, SMS_STS_ACC, bBuf, 7);
 }
 

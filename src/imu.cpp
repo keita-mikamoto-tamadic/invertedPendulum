@@ -1,6 +1,7 @@
 /* Use IMU GY521 */
 #include <imu.h>
 #include <MPU6050_6Axis_MotionApps20.h>
+#include <userdefine.h>
 MPU6050 mpu;
 
 /* Macro define */
@@ -71,7 +72,7 @@ void get_imu()
         
         stp_imu->yaw = rpy[0];
         stp_imu->roll = rpy[2];
-        stp_imu->pitch = rpy[1];
+        stp_imu->pitch = rpy[1] - ANGOFFS;
         
    }
 }
