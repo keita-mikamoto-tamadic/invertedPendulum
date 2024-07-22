@@ -1,16 +1,16 @@
 #ifndef _USERDEFINE_H_
 #define _USERDEFINE_H_
 
-#define USERPI 3.141592
+/* servo parameter */
+#define MOT1 1
+#define MOT2 2
+#define MOTRESOL 4095
 
-#define TOPCNT 1000
-#define MINVOL 200
-#define ANGLIM 1.2 //[rad]
-
-/* parameter */
+/* robot parameter */
+#define MOTNUM 2
 #define LQRGAIN -5.64
 #define MOTCURGAIN 2439
 
-#define ANGOFFS 0.13  /* 重心ずれの補正 */
+#define ANGOFFS 0.13  /* 重心ずれの補正[rad] */
 
 #endif //_USERDEFINE_H_
