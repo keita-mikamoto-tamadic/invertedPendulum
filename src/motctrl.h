@@ -13,11 +13,15 @@ typedef struct
 
     float actPos_2;
     float actVel_2;
+    
+    float test;
+    float testtime;
 } st_motctrl;
 extern st_motctrl stg_motctrl;
 
 extern void MotSetup(void);
+extern void MotAllTest(float torq, int id);
 extern void MotTorqWrite(float torq, int id);
-extern void STSReqPos(int id);
+extern void MotPosVelRead(int id);
 
 #endif // _MOTCTRL_H_

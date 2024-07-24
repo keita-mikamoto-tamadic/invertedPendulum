@@ -1,29 +1,59 @@
 #include <motctrl.h>
-#include <SCServo.h>
 #include <Wire.h>
 #include <userdefine.h>
 
-#define STS_TIMEOUT 1000
+#define STS_TIMEOUT 500
 
 byte buffer[10]; //10Byteバッファ
 
 /* global */
 st_motctrl stg_motctrl;
 void MotSetup(void);
+void MotAllTest(float torq, int id);
 void MotTorqWrite(float torq, int motch);
-void STSReqPos(int id);
+void MotPosVelRead(int id);
 
 /* static */
+typedef struct
+{
+  float past_pos1;
+  float past_pos2;
+  unsigned long past_time1;
+  unsigned long past_time2;
+  float delta_time;
+}st_Prv;
+static st_Prv sts_Prv;
+
 static void STSWriteTorq(byte id, int torq);
 static bool STSSendData(byte arr[], int len);
 static bool STSReciveData(HardwareSerial *serial_port, byte * buffer, int byteCount, unsigned long timeout, int id);
 static byte STSCheckSum(byte arr[], int len);
 static void STSReverseDir(int id);
+static void STSReqPos(int id);
+static void STSCalcVel(int id);
 
 
 void MotSetup()
 {
+    st_Prv *stp_Prv = &sts_Prv;
+
+    stp_Prv->past_pos1 = 0;
+    stp_Prv->past_pos2 = 0;
+    stp_Prv->past_time1 = 0;
+    stp_Prv->past_time2 = 0;
+    stp_Prv->delta_time = 0;
+
     Serial1.begin(1000000);
+}
+
+void MotAllTest(float torq, int id)
+{
+    st_Prv *stp_Prv = &sts_Prv;
+    st_motctrl *stp_motctrl = &stg_motctrl;
+    
+    STSReqPos(id);
+
+    STSWriteTorq(id, torq);
 }
 
 /* リミットトルクは0.441Nm */
@@ -34,6 +64,16 @@ void MotTorqWrite(float torq, int id)
 
     /* トルクをSTS3032の指令値へ変換 */
     /* 2439 * トルク （Nm）+ 50 */
+/*     if (torq > 0)
+    {
+      conv_torq = (int)(MOTCURGAIN * torq + 50);
+    }
+    else if(torq < 0)
+    {
+      conv_torq = (int)(MOTCURGAIN * torq - 50);
+    }
+    else conv_torq = 0; */
+    
     conv_torq = (int)(MOTCURGAIN * torq);
     
     /* 飽和 */
@@ -41,7 +81,39 @@ void MotTorqWrite(float torq, int id)
     if (conv_torq <= -1000) conv_torq = -1000;
     /* モータへ書き込み */
     STSWriteTorq((byte)id, conv_torq);
+}
+
+void MotPosVelRead(int id)
+{
+    st_Prv *stp_Prv = &sts_Prv;
+    st_motctrl *stp_motctrl = &stg_motctrl;
+
+    /* 位置データ要求 */
+    STSReqPos(id);   
+
+    /* 後退差分のための時間算出 */
+    if (id == 1)
+    {
+      stp_Prv->delta_time = (float)((micros() - stp_Prv->past_time1) * 0.000001);
+    }
+    else if (id == 2)
+    {
+      stp_Prv->delta_time = (float)((micros() - stp_Prv->past_time2) * 0.000001);
+    }
     
+    stp_motctrl->test = stp_Prv->delta_time;
+    /* 角速度算出 */
+    STSCalcVel(id);
+
+    /* 時間保存 */
+    if (id == 1)
+    {
+      stp_Prv->past_time1 = micros();
+    }
+    else if (id == 2)
+    {
+      stp_Prv->past_time2 = micros();
+    }
 }
 
 void STSWriteTorq(byte id, int torq)
@@ -68,6 +140,7 @@ void STSWriteTorq(byte id, int torq)
     message[12] = STSCheckSum(message, 13);
 
     STSSendData(message, 13);
+    
 }
 
 /* リクエストデータの生成と送信 */
@@ -86,9 +159,29 @@ void STSReqPos(int id)
     // コマンドパケットを送信
     STSSendData(message, 8);
     
-    // リクエストデータの受信完了まで
+    // リクエストデータの受信完了まで待つ
     STSReciveData(&Serial1, buffer, 8, STS_TIMEOUT, id);
+    /* delay入れないとバグる */
+    // delayMicroseconds(50);
   
+}
+
+/* コマンド送受信は遅いので速度は計算 */
+void STSCalcVel(int id)
+{
+  st_Prv *stp_Prv = &sts_Prv;
+  st_motctrl *stp_motctrl = &stg_motctrl;
+  
+  if (id == MOT1)
+  {
+    stp_motctrl->actVel_1 = (stp_motctrl->actPos_1 - stp_Prv->past_pos1) / stp_Prv->delta_time;
+    stp_Prv->past_pos1 = stp_motctrl->actPos_1;
+  }
+  else if (id == MOT2)
+  {
+    stp_motctrl->actVel_2 = (stp_motctrl->actPos_2 - stp_Prv->past_pos2) / stp_Prv->delta_time;
+    stp_Prv->past_pos2 = stp_motctrl->actPos_2;
+  }
 }
 
 bool STSSendData(byte arr[], int len)
@@ -116,7 +209,9 @@ bool STSReciveData(HardwareSerial *serial_port, byte * buffer, int byteCount, un
       }
       // タイムアウトチェック
       if (micros() - startTime > timeout) {
+        stp_motctrl->actPos_2 = 0;
         return false; // タイムアウト
+
       }
     }
 

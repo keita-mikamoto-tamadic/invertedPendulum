@@ -25,6 +25,7 @@ uint8_t fifoBuffer[64];
 
 Quaternion q;
 VectorFloat gravity;
+VectorInt16 rpy_gyro;
 float rpy[3];
 
 /* global variables and function */
@@ -35,7 +36,7 @@ void get_imu(void);
 void imu_setup()
 {
     Wire.begin();
-    Wire.setClock(400000);
+    Wire.setClock(115200);
     mpu.initialize();
     delay(300);
     
@@ -65,15 +66,21 @@ void get_imu()
 {
     st_imu *stp_imu = &stg_imu;
 
-    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)){
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-        mpu.dmpGetGravity(&gravity, &q);
-        mpu.dmpGetYawPitchRoll(rpy, &q, &gravity);
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer))
+    {
+      mpu.dmpGetQuaternion(&q, fifoBuffer);
+      mpu.dmpGetGravity(&gravity, &q);
+      mpu.dmpGetYawPitchRoll(rpy, &q, &gravity);
         
-        stp_imu->yaw = rpy[0];
-        stp_imu->roll = rpy[2];
-        stp_imu->pitch = rpy[1] - ANGOFFS;
-        
-        
-   }
+      /* 角度取得[rad] */
+      stp_imu->yaw = rpy[0];
+      stp_imu->roll = rpy[2];
+      /* ANGOFFSの計算はここでしないとloopに入れるとバグる */
+      stp_imu->pitch = rpy[1] - ANGOFFS;
+      
+      /* 角速度取得[rad/s] */
+      mpu.dmpGetGyro(&rpy_gyro, fifoBuffer);
+      stp_imu->pitch_gyro = (float)rpy_gyro.y * 2.0 * PI / 360.0;
+      
+    }
 }

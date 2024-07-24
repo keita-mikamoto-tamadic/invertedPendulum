@@ -8,9 +8,14 @@
 
 /* robot parameter */
 #define MOTNUM 2
-#define LQRGAIN -5.64
+
+#define F1LQR -4.207
+#define F2LQR -0.596
+#define F3LQR -0.063
+#define F4LQR -0.082
+
 #define MOTCURGAIN 2439
 
-#define ANGOFFS 0.13  /* 重心ずれの補正[rad] */
+#define ANGOFFS 0.122  /* 重心ずれの補正[rad] */
 
 #endif //_USERDEFINE_H_

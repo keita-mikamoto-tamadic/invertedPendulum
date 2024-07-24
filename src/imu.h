@@ -9,6 +9,9 @@ typedef struct
     float yaw;
     float pitch;
     float roll;
+    float yaw_gyro;
+    float pitch_gyro;
+    float roll_gyro;
 } st_imu;
 extern st_imu stg_imu;
 
