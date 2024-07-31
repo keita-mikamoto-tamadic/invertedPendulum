@@ -16,6 +16,6 @@
 
 #define MOTCURGAIN 2439
 
-#define ANGOFFS 0.122  /* 重心ずれの補正[rad] */
+#define ANGOFFS 0.122 /* 重心ずれの補正[rad] */
 
-#endif //_USERDEFINE_H_
+#endif  //_USERDEFINE_H_

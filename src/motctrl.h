@@ -4,18 +4,17 @@
 #include "userdefine.h"
 
 /* global variables and function */
-typedef struct
-{
-    float actTorq;
+typedef struct {
+  float actTorq;
 
-    float actPos_1;
-    float actVel_1;
+  float actPos_1;
+  float actVel_1;
 
-    float actPos_2;
-    float actVel_2;
-    
-    float test;
-    float testtime;
+  float actPos_2;
+  float actVel_2;
+
+  float test;
+  float testtime;
 } st_motctrl;
 extern st_motctrl stg_motctrl;
 
@@ -24,4 +23,4 @@ extern void MotAllTest(float torq, int id);
 extern void MotTorqWrite(float torq, int id);
 extern void MotPosVelRead(int id);
 
-#endif // _MOTCTRL_H_
+#endif  // _MOTCTRL_H_
