@@ -1,28 +1,33 @@
+/*******************************************************************************
+ * File Name    : motctrl.cpp
+ * Description  : モータ制御の実装
+ ******************************************************************************
+ * 変更履歴 : DD.MM.YYYY Version Description
+ *          : 2024.07.14 1.00 K.Mikamoto 新設
+ *****************************************************************************/
+
 #include <Wire.h>
 #include <motctrl.h>
 #include <userdefine.h>
 
+/******************************************************************************
+ * Macro definitions
+ *****************************************************************************/
 #define STS_TIMEOUT 500
 
-byte buffer[10];  // 10Byteバッファ
-
-/* global */
-st_motctrl stg_motctrl;
+/*******************************************************************************
+ * Global variables and functions
+ *****************************************************************************/
 void MotSetup(void);
 void MotAllTest(float torq, int id);
 void MotTorqWrite(float torq, int motch);
 void MotPosVelRead(int id);
 
-/* static */
-typedef struct {
-  float past_pos1;
-  float past_pos2;
-  unsigned long past_time1;
-  unsigned long past_time2;
-  float delta_time;
-} st_Prv;
-static st_Prv sts_Prv;
+st_motctrl stg_motctrl;
 
+/******************************************************************************
+ * File Scope variables and functions
+ *****************************************************************************/
 static void STSWriteTorq(byte id, int torq);
 static bool STSSendData(byte arr[], int len);
 static bool STSReciveData(HardwareSerial *serial_port, byte *buffer,
@@ -32,6 +37,23 @@ static void STSReverseDir(int id);
 static void STSReqPos(int id);
 static void STSCalcVel(int id);
 
+byte buffer[10];  // 10Byteバッファ
+
+typedef struct {
+  float past_pos1;
+  float past_pos2;
+  unsigned long past_time1;
+  unsigned long past_time2;
+  float delta_time;
+} st_Prv;
+static st_Prv sts_Prv;
+
+/******************************************************************************
+ * Function Name: MotSetup
+ * Description  : モータ制御システムのセットアップ
+ * Arguments    : none
+ * Return Value : none
+ *****************************************************************************/
 void MotSetup() {
   st_Prv *stp_Prv = &sts_Prv;
 
@@ -44,6 +66,13 @@ void MotSetup() {
   Serial1.begin(1000000);
 }
 
+/******************************************************************************
+ * Function Name: MotAllTest
+ * Description  : 指定したトルクで全モータをテストする
+ * Arguments    : torq - トルク値
+ *                id - モータID
+ * Return Value : none
+ *****************************************************************************/
 void MotAllTest(float torq, int id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
@@ -53,6 +82,13 @@ void MotAllTest(float torq, int id) {
   STSWriteTorq(id, torq);
 }
 
+/******************************************************************************
+ * Function Name: MotTorqWrite
+ * Description  : 指定したモータにトルクを書き込む
+ * Arguments    : torq - トルク値
+ *                id - モータID
+ * Return Value : none
+ *****************************************************************************/
 /* リミットトルクは0.441Nm */
 /* 0.0515Nm以下はモータ動作不可なのでトルク0とする */
 void MotTorqWrite(float torq, int id) {
@@ -75,10 +111,17 @@ void MotTorqWrite(float torq, int id) {
   /* 飽和 */
   if (conv_torq >= 1000) conv_torq = 1000;
   if (conv_torq <= -1000) conv_torq = -1000;
+
   /* モータへ書き込み */
   STSWriteTorq((byte)id, conv_torq);
 }
 
+/******************************************************************************
+ * Function Name: MotPosVelRead
+ * Description  : 位置・速度の算出
+ * Arguments    : id - モータID
+ * Return Value : none
+ *****************************************************************************/
 void MotPosVelRead(int id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
@@ -94,6 +137,7 @@ void MotPosVelRead(int id) {
   }
 
   stp_motctrl->test = stp_Prv->delta_time;
+
   /* 角速度算出 */
   STSCalcVel(id);
 
@@ -105,8 +149,15 @@ void MotPosVelRead(int id) {
   }
 }
 
+/******************************************************************************
+ * Function Name: STSWriteTorq
+ * Description  : モータにトルクを書き込む
+ * Arguments    : id - モータID
+ *                torq - トルク値
+ * Return Value : none
+ *****************************************************************************/
 void STSWriteTorq(byte id, int torq) {
-  // トルクが負の時は、
+  // トルクが負の時は、方向ビットを設定
   if (torq < 0) {
     torq = -torq;
     torq |= (1 << 10);
@@ -131,6 +182,12 @@ void STSWriteTorq(byte id, int torq) {
   STSSendData(message, 13);
 }
 
+/******************************************************************************
+ * Function Name: STSReqPos
+ * Description  : モータから位置データを要求する
+ * Arguments    : id - モータID
+ * Return Value : none
+ *****************************************************************************/
 /* リクエストデータの生成と送信 */
 void STSReqPos(int id) {
   byte message[8];                       // コマンドパケットを作成
@@ -152,6 +209,12 @@ void STSReqPos(int id) {
   // delayMicroseconds(50);
 }
 
+/******************************************************************************
+ * Function Name: STSCalcVel
+ * Description  : 速度の算出
+ * Arguments    : id - モータID
+ * Return Value : none
+ *****************************************************************************/
 /* コマンド送受信は遅いので速度は計算 */
 void STSCalcVel(int id) {
   st_Prv *stp_Prv = &sts_Prv;
@@ -168,13 +231,32 @@ void STSCalcVel(int id) {
   }
 }
 
+/******************************************************************************
+ * Function Name: STSSendData
+ * Description  : モータへデータを送信する
+ * Arguments    : arr - 送信バッファ
+ *                len - 送信データ長さ
+ * Return Value : true - 送信成功
+ *****************************************************************************/
 bool STSSendData(byte arr[], int len) {
   for (int i = 0; i < len; i++) {
     Serial1.write(arr[i]);
   }
   Serial1.flush();  // 送信完了待ち
+  return true;
 }
 
+/******************************************************************************
+ * Function Name: STSReciveData
+ * Description  : モータからデータを受信する
+ * Arguments    : serial_port - シリアルポート
+ *                buffer - 受信バッファ
+ *                byteCount - 受信するバイト数
+ *                timeout - 受信のタイムアウト
+ *                id - モータID
+ * Return Value : true - データ受信成功
+ *                false - データ受信失敗
+ *****************************************************************************/
 bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
                    unsigned long timeout, int id) {
   static int temp_ang = 0;
@@ -209,6 +291,13 @@ bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
   return true;
 }
 
+/******************************************************************************
+ * Function Name: STSCheckSum
+ * Description  : データのチェックサムを計算する
+ * Arguments    : arr - データ配列
+ *                len - データ長さ
+ * Return Value : 計算されたチェックサム
+ *****************************************************************************/
 byte STSCheckSum(byte arr[], int len) {
   int checksum = 0;
   for (int i = 2; i < len - 1; i++) {
@@ -217,6 +306,12 @@ byte STSCheckSum(byte arr[], int len) {
   return ~((byte)(checksum & 0xFF));  // チェックサム
 }
 
+/******************************************************************************
+ * Function Name: STSReverseDir
+ * Description  : モータの方向を反転する
+ * Arguments    : id - モータID
+ * Return Value : none
+ *****************************************************************************/
 void STSReverseDir(int id) {
   // コマンドパケットを作成
   // https://akizukidenshi.com/goodsaffix/feetech_digital_servo_20220729.pdf
