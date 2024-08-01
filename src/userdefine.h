@@ -1,12 +1,24 @@
+/*******************************************************************************
+ * File Name    : userdefine.h
+ * Description  : ユーザー定義パラメータ
+ ******************************************************************************
+ * 変更履歴 : DD.MM.YYYY Version Description
+ *          : 2024.04.44 1.00 K.Mikamoto 新設
+ *****************************************************************************/
+
 #ifndef _USERDEFINE_H_
 #define _USERDEFINE_H_
 
-/* servo parameter */
+/******************************************************************************
+ * Macro definitions
+ *****************************************************************************/
+
+/* サーボパラメータ */
 #define MOT1 1
 #define MOT2 2
 #define MOTRESOL 4095
 
-/* robot parameter */
+/* ロボットパラメータ */
 #define MOTNUM 2
 
 #define F1LQR -4.207
@@ -21,4 +33,4 @@
 #define USER_PI (3.14159265358979323846f)
 #define USER_2PI (USER_PI * 2.0f)
 
-#endif  //_USERDEFINE_H_
+#endif  // _USERDEFINE_H_

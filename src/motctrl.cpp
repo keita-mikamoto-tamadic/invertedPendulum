@@ -23,6 +23,19 @@ void MotAllTest(float torq, int id);
 void MotTorqWrite(float torq, int motch);
 void MotPosVelRead(int id);
 
+// structure defined in header file to give global scope
+// typedef struct {
+//   float actTorq;
+// 
+//   float actPos_1;
+//   float actVel_1;
+// 
+//   float actPos_2;
+//   float actVel_2;
+// 
+//   float test;
+//   float testtime;
+// } st_motctrl;
 st_motctrl stg_motctrl;
 
 /******************************************************************************

@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * File Name    : main.cpp
+ * Description  : メインプログラムの実装
+ ******************************************************************************
+ * 変更履歴 : DD.MM.YYYY Version Description
+ *          : 2024.04.04 1.00 K.Mikamoto 新設
+ *****************************************************************************/
+
 #include <Arduino.h>
 #include <FspTimer.h>
 #include <imu.h>
@@ -7,12 +15,21 @@
 
 static FspTimer fsp_timer;
 
+/*******************************************************************************
+ * Global variables and functions
+ *****************************************************************************/
 void timer_callback([[maybe_unused]] timer_callback_args_t *arg);
 
+/******************************************************************************
+ * Function Name: setup
+ * Description  : システムのセットアップ
+ * Arguments    : none
+ * Return Value : none
+ *****************************************************************************/
 void setup() {
   Serial.begin(9600);
 
-  /* 割り込み用タイマーの設定(現在未使用) */
+  // 割り込み用タイマーの設定(現在未使用)
   uint8_t timer_type;
   int8_t timer_ch = FspTimer::get_available_timer(timer_type);
   if (timer_ch < 0) {
@@ -27,7 +44,7 @@ void setup() {
   fsp_timer.start();
   /* ********************************* */
 
-  /* Motor setup function */
+  // Motor setup function
   MotSetup();
   imu_setup();
 
@@ -35,8 +52,20 @@ void setup() {
   Serial.println("setup complete");
 }
 
+/******************************************************************************
+ * Function Name: timer_callback
+ * Description  : タイマー割り込みコールバック関数
+ * Arguments    : arg - タイマーコールバック引数
+ * Return Value : none
+ *****************************************************************************/
 void timer_callback([[maybe_unused]] timer_callback_args_t *arg) {}
 
+/******************************************************************************
+ * Function Name: loop
+ * Description  : メインループ処理
+ * Arguments    : none
+ * Return Value : none
+ *****************************************************************************/
 void loop() {
   // 時間計測用
   float start, end;
