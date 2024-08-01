@@ -220,14 +220,45 @@ void STSCalcVel(int id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
 
-  if (id == MOT1) {
-    stp_motctrl->actVel_1 =
-        (stp_motctrl->actPos_1 - stp_Prv->past_pos1) / stp_Prv->delta_time;
-    stp_Prv->past_pos1 = stp_motctrl->actPos_1;
-  } else if (id == MOT2) {
-    stp_motctrl->actVel_2 =
-        (stp_motctrl->actPos_2 - stp_Prv->past_pos2) / stp_Prv->delta_time;
-    stp_Prv->past_pos2 = stp_motctrl->actPos_2;
+  float delta_pos = 0.0f;
+
+  switch (id) {
+    case MOT1:
+      delta_pos = stp_motctrl->actPos_1 - stp_Prv->past_pos1;
+
+      // 0またぎの処理
+      if (delta_pos > USER_2PI) {
+        delta_pos -= USER_2PI;
+      } else if (delta_pos < -USER_2PI) {
+        delta_pos += USER_2PI;
+      }
+
+      // 速度の計算
+      stp_motctrl->actVel_1 = delta_pos / stp_Prv->delta_time;
+
+      // 前回値の保存
+      stp_Prv->past_pos1 = stp_motctrl->actPos_1;
+      break;
+
+    case MOT2:
+      delta_pos = stp_motctrl->actPos_2 - stp_Prv->past_pos2;
+
+      // 0またぎの処理
+      if (delta_pos > USER_2PI) {
+        delta_pos -= USER_2PI;
+      } else if (delta_pos < -USER_2PI) {
+        delta_pos += USER_2PI;
+      }
+
+      // 速度の計算
+      stp_motctrl->actVel_2 = delta_pos / stp_Prv->delta_time;
+
+      // 前回値の保存
+      stp_Prv->past_pos2 = stp_motctrl->actPos_2;
+      break;
+
+    default:
+      break;
   }
 }
 

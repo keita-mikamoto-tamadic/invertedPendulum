@@ -18,4 +18,7 @@
 
 #define ANGOFFS 0.122 /* 重心ずれの補正[rad] */
 
+#define USER_PI (3.14159265358979323846f)
+#define USER_2PI (USER_PI * 2.0f)
+
 #endif  //_USERDEFINE_H_
