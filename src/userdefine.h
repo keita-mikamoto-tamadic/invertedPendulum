@@ -12,10 +12,6 @@
 /******************************************************************************
  * Macro definitions
  *****************************************************************************/
-// サーボパラメータ
-#define MOT1 1
-#define MOT2 2
-
 // 算術定数
 #define USER_PI 3.14159265358979323846
 #define USER_2PI (2 * USER_PI)
@@ -23,7 +19,7 @@
 /******************************************************************************
  * Typedef definitions
  *****************************************************************************/
-typedef enum { MOTID_0 = 0U, MOTID_1, MOTID_NONE } MotID_t;
+typedef enum { MOTID_NONE = 0U, MOTID_1 = 1U, MOTID_2 } MotID_t;
 
 /*******************************************************************************
  * Global variables and functions
@@ -35,7 +31,8 @@ const float kF3Lqr = -0.063;
 const float kF4Lqr = -0.082;
 
 // モータ制御用定数
-const int kMotNum = 2;
+// STS3032のIDが1スタートであり, 存在しないID=0へのアクセスを避けるため
+const int kMotNum = 3;
 const int kMotResol = 4095;
 const int kMotCurGain = 2439;
 const float kAngOffset = 0.122;  // 重心ずれの補正 [rad]

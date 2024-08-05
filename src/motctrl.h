@@ -18,13 +18,11 @@
  * Typedef definitions
  *****************************************************************************/
 typedef struct {
-  float actTorq;
+  float act_pos_1;
+  float act_vel_1;
 
-  float actPos_1;
-  float actVel_1;
-
-  float actPos_2;
-  float actVel_2;
+  float act_pos_2;
+  float act_vel_2;
 
   float test;
   float testtime;
@@ -42,9 +40,10 @@ extern st_motctrl stg_motctrl;
 /******************************************************************************
  * Global functions
  *****************************************************************************/
-extern void MotSetup(void);
-extern void MotAllTest(float torq, int id);
-extern void MotTorqWrite(float torq, int id);
-extern void MotPosVelRead(int id);
+extern void MotSetup(MotID_t id);
+extern void StartSerial1(void);
+extern void MotAllTest(float torq, MotID_t id);
+extern void MotTorqWrite(float torq, MotID_t id);
+extern void MotPosVelRead(MotID_t id);
 
 #endif  // _MOTCTRL_H_

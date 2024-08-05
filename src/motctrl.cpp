@@ -17,20 +17,19 @@
 /*******************************************************************************
  * Global variables and functions
  *****************************************************************************/
-void MotSetup(void);
-void MotAllTest(float torq, int id);
+void MotSetup(MotID_t id);
+void StartSerial1(void);
+void MotAllTest(float torq, MotID_t id);
 void MotTorqWrite(float torq, int motch);
-void MotPosVelRead(int id);
+void MotPosVelRead(MotID_t id);
 
 // structure defined in header file to give global scope
 // typedef struct {
-//   float actTorq;
+//   float act_pos_1;
+//   float act_vel_1;
 //
-//   float actPos_1;
-//   float actVel_1;
-//
-//   float actPos_2;
-//   float actVel_2;
+//   float act_pos_2;
+//   float act_vel_2;
 //
 //   float test;
 //   float testtime;
@@ -40,14 +39,14 @@ st_motctrl stg_motctrl;
 /******************************************************************************
  * File Scope variables and functions
  *****************************************************************************/
-static void STSWriteTorq(byte id, int torq);
+static void STSWriteTorq(MotID_t id, int torq);
 static bool STSSendData(byte arr[], int len);
 static bool STSReciveData(HardwareSerial *serial_port, byte *buffer,
-                          int byteCount, unsigned long timeout, int id);
+                          int byteCount, unsigned long timeout, MotID_t id);
 static byte STSCheckSum(byte arr[], int len);
-static void STSReverseDir(int id);
-static void STSReqPos(int id);
-static void STSCalcVel(int id);
+static void STSReverseDir(MotID_t id);
+static void STSReqPos(MotID_t id);
+static void STSCalcVel(MotID_t id);
 
 byte buffer[10];  // 10Byteバッファ
 
@@ -56,27 +55,45 @@ typedef struct {
   float past_pos2;
   unsigned long past_time1;
   unsigned long past_time2;
-  float delta_time;
+  float delta_time_1;
+  float delta_time_2;
 } st_Prv;
 static st_Prv sts_Prv;
 
 /******************************************************************************
  * Function Name: MotSetup
  * Description  : モータ制御システムのセットアップ
+ * Arguments    : id - モータID
+ * Return Value : none
+ *****************************************************************************/
+void MotSetup(MotID_t id) {
+  st_Prv *stp_Prv = &sts_Prv;
+
+  switch (id) {
+    case MOTID_1:
+      stp_Prv->past_pos1 = 0.0f;
+      stp_Prv->past_time1 = 0;
+      stp_Prv->delta_time_1 = 0.0f;
+      break;
+
+    case MOTID_2:
+      stp_Prv->past_pos2 = 0.0f;
+      stp_Prv->past_time2 = 0;
+      stp_Prv->delta_time_2 = 0.0f;
+      break;
+
+    default:
+      break;
+  }
+}
+
+/******************************************************************************
+ * Function Name: MotSetup
+ * Description  : シリアル通信開始
  * Arguments    : none
  * Return Value : none
  *****************************************************************************/
-void MotSetup() {
-  st_Prv *stp_Prv = &sts_Prv;
-
-  stp_Prv->past_pos1 = 0;
-  stp_Prv->past_pos2 = 0;
-  stp_Prv->past_time1 = 0;
-  stp_Prv->past_time2 = 0;
-  stp_Prv->delta_time = 0;
-
-  Serial1.begin(1000000);
-}
+void StartSerial1(void) { Serial1.begin(1000000); }
 
 /******************************************************************************
  * Function Name: MotAllTest
@@ -85,7 +102,7 @@ void MotSetup() {
  *                id - モータID
  * Return Value : none
  *****************************************************************************/
-void MotAllTest(float torq, int id) {
+void MotAllTest(float torq, MotID_t id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
 
@@ -103,7 +120,7 @@ void MotAllTest(float torq, int id) {
  *****************************************************************************/
 // リミットトルクは0.441Nm
 // 0.0515Nm以下はモータ動作不可なのでトルク0とする
-void MotTorqWrite(float torq, int id) {
+void MotTorqWrite(float torq, MotID_t id) {
   static int conv_torq = 0;
 
   // トルクをSTS3032の指令値へ変換
@@ -122,7 +139,7 @@ void MotTorqWrite(float torq, int id) {
   if (conv_torq <= -1000) conv_torq = -1000;
 
   // モータへ書き込み
-  STSWriteTorq((byte)id, conv_torq);
+  STSWriteTorq(id, conv_torq);
 }
 
 /******************************************************************************
@@ -131,30 +148,47 @@ void MotTorqWrite(float torq, int id) {
  * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
-void MotPosVelRead(int id) {
+void MotPosVelRead(MotID_t id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
 
-  /* 位置データ要求 */
-  STSReqPos(id);
+  switch (id) {
+    case MOTID_1:
+      // 位置データ要求
+      STSReqPos(id);
 
-  /* 後退差分のための時間算出 */
-  if (id == 1) {
-    stp_Prv->delta_time = (float)((micros() - stp_Prv->past_time1) * 0.000001);
-  } else if (id == 2) {
-    stp_Prv->delta_time = (float)((micros() - stp_Prv->past_time2) * 0.000001);
-  }
+      // 後退差分のための時間算出
+      stp_Prv->delta_time_1 =
+          (float)((micros() - stp_Prv->past_time1) * 0.000001);
 
-  stp_motctrl->test = stp_Prv->delta_time;
+      stp_motctrl->test = stp_Prv->delta_time_1;
 
-  /* 角速度算出 */
-  STSCalcVel(id);
+      // 角速度算出
+      STSCalcVel(id);
 
-  /* 時間保存 */
-  if (id == 1) {
-    stp_Prv->past_time1 = micros();
-  } else if (id == 2) {
-    stp_Prv->past_time2 = micros();
+      // 時間保存
+      stp_Prv->past_time1 = micros();
+      break;
+
+    case MOTID_2:
+      // 位置データ要求
+      STSReqPos(id);
+
+      // 後退差分のための時間算出
+      stp_Prv->delta_time_2 =
+          (float)((micros() - stp_Prv->past_time2) * 0.000001);
+
+      stp_motctrl->test = stp_Prv->delta_time_2;
+
+      // 角速度算出
+      STSCalcVel(id);
+
+      // 時間保存
+      stp_Prv->past_time2 = micros();
+      break;
+
+    default:
+      break;
   }
 }
 
@@ -165,18 +199,20 @@ void MotPosVelRead(int id) {
  *                torq - トルク値
  * Return Value : none
  *****************************************************************************/
-void STSWriteTorq(byte id, int torq) {
+void STSWriteTorq(MotID_t id, int torq) {
+  byte message[13];
+
   // トルクが負の時は、方向ビットを設定
   if (torq < 0) {
     torq = -torq;
     torq |= (1 << 10);
   }
+
   // コマンドパケットを作成
   // https://akizukidenshi.com/goodsaffix/feetech_digital_servo_20220729.pdf
-  byte message[13];
   message[0] = 0xFF;                // ヘッダ
   message[1] = 0xFF;                // ヘッダ
-  message[2] = id;                  // サーボID
+  message[2] = (byte)id;            // サーボID
   message[3] = 9;                   // パケットデータ長
   message[4] = 3;                   // コマンド（3は書き込み命令）
   message[5] = 42;                  // レジスタ先頭番号
@@ -197,7 +233,7 @@ void STSWriteTorq(byte id, int torq) {
  * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
-void STSReqPos(int id) {
+void STSReqPos(MotID_t id) {
   const int kStsTimeOut = 500;
   byte message[8];  // コマンドパケットを作成
 
@@ -226,15 +262,14 @@ void STSReqPos(int id) {
  * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
-void STSCalcVel(int id) {
+void STSCalcVel(MotID_t id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
-
   float delta_pos = 0.0f;
 
   switch (id) {
-    case MOT1:
-      delta_pos = stp_motctrl->actPos_1 - stp_Prv->past_pos1;
+    case MOTID_1:
+      delta_pos = stp_motctrl->act_pos_1 - stp_Prv->past_pos1;
 
       // 0またぎの処理
       if (delta_pos > USER_2PI) {
@@ -244,14 +279,14 @@ void STSCalcVel(int id) {
       }
 
       // 速度の計算
-      stp_motctrl->actVel_1 = delta_pos / stp_Prv->delta_time;
+      stp_motctrl->act_vel_1 = delta_pos / stp_Prv->delta_time_1;
 
       // 前回値の保存
-      stp_Prv->past_pos1 = stp_motctrl->actPos_1;
+      stp_Prv->past_pos1 = stp_motctrl->act_pos_1;
       break;
 
-    case MOT2:
-      delta_pos = stp_motctrl->actPos_2 - stp_Prv->past_pos2;
+    case MOTID_2:
+      delta_pos = stp_motctrl->act_pos_2 - stp_Prv->past_pos2;
 
       // 0またぎの処理
       if (delta_pos > USER_2PI) {
@@ -261,10 +296,10 @@ void STSCalcVel(int id) {
       }
 
       // 速度の計算
-      stp_motctrl->actVel_2 = delta_pos / stp_Prv->delta_time;
+      stp_motctrl->act_vel_2 = delta_pos / stp_Prv->delta_time_2;
 
       // 前回値の保存
-      stp_Prv->past_pos2 = stp_motctrl->actPos_2;
+      stp_Prv->past_pos2 = stp_motctrl->act_pos_2;
       break;
 
     default:
@@ -283,7 +318,9 @@ bool STSSendData(byte arr[], int len) {
   for (int i = 0; i < len; i++) {
     Serial1.write(arr[i]);
   }
+
   Serial1.flush();  // 送信完了待ち
+
   return true;
 }
 
@@ -299,12 +336,11 @@ bool STSSendData(byte arr[], int len) {
  *                false - データ受信失敗
  *****************************************************************************/
 bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
-                   unsigned long timeout, int id) {
-  static int temp_ang = 0;
+                   unsigned long timeout, MotID_t id) {
   st_motctrl *stp_motctrl = &stg_motctrl;
-
-  int receivedBytes = 0;
+  static int temp_ang = 0;
   unsigned long startTime = micros();
+  int receivedBytes = 0;
 
   // 指定されたバイト数が来るまで待つ
   while (receivedBytes < byteCount + 2 - 2) {
@@ -315,18 +351,26 @@ bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
     }
     // タイムアウトチェック
     if (micros() - startTime > timeout) {
-      stp_motctrl->actPos_2 = 0;
+      stp_motctrl->act_pos_2 = 0;
       return false;  // タイムアウト
     }
   }
 
   temp_ang = int(buffer[6]) * 256 + int(buffer[5]);
+
   // 4095分解能をradへ変換
-  if (id == 1) {
-    stp_motctrl->actPos_1 = USER_2PI * (float(temp_ang) / kMotResol);
-  } else if (id == 2) {
-    // 方向反転
-    stp_motctrl->actPos_2 = USER_2PI * (float(~(temp_ang) + kMotResol) / kMotResol);
+  switch (id) {
+    case MOTID_1:
+      stp_motctrl->act_pos_1 = USER_2PI * (float(temp_ang) / kMotResol);
+      break;
+
+    case MOTID_2:
+      // 方向反転
+      stp_motctrl->act_pos_2 =
+          USER_2PI * (float(~(temp_ang) + kMotResol) / kMotResol);
+      break;
+    default:
+      break;
   }
 
   return true;
@@ -341,9 +385,11 @@ bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
  *****************************************************************************/
 byte STSCheckSum(byte arr[], int len) {
   int checksum = 0;
+
   for (int i = 2; i < len - 1; i++) {
     checksum += arr[i];
   }
+
   return ~((byte)(checksum & 0xFF));  // チェックサム
 }
 
@@ -353,10 +399,11 @@ byte STSCheckSum(byte arr[], int len) {
  * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
-void STSReverseDir(int id) {
+void STSReverseDir(MotID_t id) {
+  byte message[13];
+
   // コマンドパケットを作成
   // https://akizukidenshi.com/goodsaffix/feetech_digital_servo_20220729.pdf
-  byte message[13];
   message[0] = 0xFF;      // ヘッダ
   message[1] = 0xFF;      // ヘッダ
   message[2] = (byte)id;  // サーボID

@@ -44,7 +44,9 @@ void setup() {
   fsp_timer.start();
 
   // Motor setup function
-  MotSetup();
+  MotSetup(MOTID_1);
+  MotSetup(MOTID_2);
+  StartSerial1();
   imu_setup();
 
   delay(2000);  // いきなりサーボ入るので、少し長めに待つ
@@ -81,27 +83,27 @@ void loop() {
   start = micros();
 
   // STS3032:位置・角速度取得
-  MotPosVelRead(MOT1);
-  MotPosVelRead(MOT2);
+  MotPosVelRead(MOTID_1);
+  MotPosVelRead(MOTID_2);
 
   // トルク計算
-  LQRcontrol(stp_imu->pitch, stp_imu->pitch_gyro, stp_motctrl->actPos_1,
-             stp_motctrl->actVel_1);
+  LQRcontrol(stp_imu->pitch, stp_imu->pitch_gyro, stp_motctrl->act_pos_1,
+             stp_motctrl->act_vel_1);
 
   // IMU用の不感帯
   if (-0.02 < stp_imu->pitch && stp_imu->pitch < 0.02) stp_lqr->refTorq = 0;
 
   // モータートルク印可
-  MotTorqWrite(stp_lqr->refTorq, MOT1);
-  MotTorqWrite(-(stp_lqr->refTorq), MOT2);
+  MotTorqWrite(stp_lqr->refTorq, MOTID_1);
+  MotTorqWrite(-(stp_lqr->refTorq), MOTID_2);
 
   // MotAllTest(500,2);
   end = micros();
 
   if (debug == true) {
-    Serial.print(stp_motctrl->actPos_1);
+    Serial.print(stp_motctrl->act_pos_1);
     Serial.print(" ; ");
-    Serial.print(String(stp_motctrl->actVel_2, 6));
+    Serial.print(String(stp_motctrl->act_vel_2, 6));
     Serial.print(" ; ");
     Serial.print(stp_imu->pitch);
     Serial.print(" ; ");
