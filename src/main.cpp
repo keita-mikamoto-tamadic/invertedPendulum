@@ -49,7 +49,7 @@ void setup() {
   StartSerial1();
   imu_setup();
 
-  delay(2000);  // いきなりサーボ入るので、少し長めに待つ
+  delay(2000);  // いきなりサーボ入るので、少し長めに待つ(2000 [ms])
   Serial.println("setup complete");
 }
 
@@ -76,7 +76,7 @@ void loop() {
 
   st_imu *stp_imu = &stg_imu;
   st_lqr *stp_lqr = &stg_lqr;
-  st_motctrl *stp_motctrl = &stg_motctrl;
+  //   st_motctrl *stp_motctrl = &stg_motctrl;
 
   // IMU:角度・角速度取得
   get_imu();
@@ -87,8 +87,8 @@ void loop() {
   MotPosVelRead(MOTID_2);
 
   // トルク計算
-  LQRcontrol(stp_imu->pitch, stp_imu->pitch_gyro, stp_motctrl->act_pos_1,
-             stp_motctrl->act_vel_1);
+  LQRcontrol(stp_imu->pitch, stp_imu->pitch_gyro, stg_motctrl[MOTID_1].act_pos,
+             stg_motctrl[MOTID_1].act_vel);
 
   // IMU用の不感帯
   if (-0.02 < stp_imu->pitch && stp_imu->pitch < 0.02) stp_lqr->refTorq = 0;
@@ -101,9 +101,9 @@ void loop() {
   end = micros();
 
   if (debug == true) {
-    Serial.print(stp_motctrl->act_pos_1);
+    Serial.print(stg_motctrl[MOTID_1].act_pos);
     Serial.print(" ; ");
-    Serial.print(String(stp_motctrl->act_vel_2, 6));
+    Serial.print(String(stg_motctrl[MOTID_2].act_vel, 6));
     Serial.print(" ; ");
     Serial.print(stp_imu->pitch);
     Serial.print(" ; ");

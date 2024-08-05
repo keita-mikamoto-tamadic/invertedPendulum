@@ -25,16 +25,11 @@ void MotPosVelRead(MotID_t id);
 
 // structure defined in header file to give global scope
 // typedef struct {
-//   float act_pos_1;
-//   float act_vel_1;
-//
-//   float act_pos_2;
-//   float act_vel_2;
-//
-//   float test;
-//   float testtime;
+//   float act_pos;
+//   float act_trq;
+//   float act_vel;
 // } st_motctrl;
-st_motctrl stg_motctrl;
+st_motctrl stg_motctrl[kMotNum];
 
 /******************************************************************************
  * File Scope variables and functions
@@ -51,14 +46,11 @@ static void STSCalcVel(MotID_t id);
 byte buffer[10];  // 10Byteバッファ
 
 typedef struct {
-  float past_pos1;
-  float past_pos2;
-  unsigned long past_time1;
-  unsigned long past_time2;
-  float delta_time_1;
-  float delta_time_2;
+  float delta_time;
+  float past_pos;
+  unsigned long past_time;
 } st_Prv;
-static st_Prv sts_Prv;
+static st_Prv sts_Prv[kMotNum];
 
 /******************************************************************************
  * Function Name: MotSetup
@@ -67,24 +59,11 @@ static st_Prv sts_Prv;
  * Return Value : none
  *****************************************************************************/
 void MotSetup(MotID_t id) {
-  st_Prv *stp_Prv = &sts_Prv;
+  st_Prv *stp_Prv = &sts_Prv[id];
 
-  switch (id) {
-    case MOTID_1:
-      stp_Prv->past_pos1 = 0.0f;
-      stp_Prv->past_time1 = 0;
-      stp_Prv->delta_time_1 = 0.0f;
-      break;
-
-    case MOTID_2:
-      stp_Prv->past_pos2 = 0.0f;
-      stp_Prv->past_time2 = 0;
-      stp_Prv->delta_time_2 = 0.0f;
-      break;
-
-    default:
-      break;
-  }
+  stp_Prv->delta_time = 0.0f;
+  stp_Prv->past_pos = 0.0f;
+  stp_Prv->past_time = 0;
 }
 
 /******************************************************************************
@@ -103,9 +82,6 @@ void StartSerial1(void) { Serial1.begin(1000000); }
  * Return Value : none
  *****************************************************************************/
 void MotAllTest(float torq, MotID_t id) {
-  st_Prv *stp_Prv = &sts_Prv;
-  st_motctrl *stp_motctrl = &stg_motctrl;
-
   STSReqPos(id);
 
   STSWriteTorq(id, torq);
@@ -149,47 +125,20 @@ void MotTorqWrite(float torq, MotID_t id) {
  * Return Value : none
  *****************************************************************************/
 void MotPosVelRead(MotID_t id) {
-  st_Prv *stp_Prv = &sts_Prv;
-  st_motctrl *stp_motctrl = &stg_motctrl;
+  st_Prv *stp_Prv = &sts_Prv[id];
+  st_motctrl *stp_motctrl = &stg_motctrl[id];
 
-  switch (id) {
-    case MOTID_1:
-      // 位置データ要求
-      STSReqPos(id);
+  // 位置データ要求
+  STSReqPos(id);
 
-      // 後退差分のための時間算出
-      stp_Prv->delta_time_1 =
-          (float)((micros() - stp_Prv->past_time1) * 0.000001);
+  // 後退差分のための時間算出
+  stp_Prv->delta_time = (float)((micros() - stp_Prv->past_time) * 0.000001);
 
-      stp_motctrl->test = stp_Prv->delta_time_1;
+  // 角速度算出
+  STSCalcVel(id);
 
-      // 角速度算出
-      STSCalcVel(id);
-
-      // 時間保存
-      stp_Prv->past_time1 = micros();
-      break;
-
-    case MOTID_2:
-      // 位置データ要求
-      STSReqPos(id);
-
-      // 後退差分のための時間算出
-      stp_Prv->delta_time_2 =
-          (float)((micros() - stp_Prv->past_time2) * 0.000001);
-
-      stp_motctrl->test = stp_Prv->delta_time_2;
-
-      // 角速度算出
-      STSCalcVel(id);
-
-      // 時間保存
-      stp_Prv->past_time2 = micros();
-      break;
-
-    default:
-      break;
-  }
+  // 時間保存
+  stp_Prv->past_time = micros();
 }
 
 /******************************************************************************
@@ -263,48 +212,24 @@ void STSReqPos(MotID_t id) {
  * Return Value : none
  *****************************************************************************/
 void STSCalcVel(MotID_t id) {
-  st_Prv *stp_Prv = &sts_Prv;
-  st_motctrl *stp_motctrl = &stg_motctrl;
+  st_Prv *stp_Prv = &sts_Prv[id];
+  st_motctrl *stp_motctrl = &stg_motctrl[id];
   float delta_pos = 0.0f;
 
-  switch (id) {
-    case MOTID_1:
-      delta_pos = stp_motctrl->act_pos_1 - stp_Prv->past_pos1;
+  delta_pos = stp_motctrl->act_pos - stp_Prv->past_pos;
 
-      // 0またぎの処理
-      if (delta_pos > USER_2PI) {
-        delta_pos -= USER_2PI;
-      } else if (delta_pos < -USER_2PI) {
-        delta_pos += USER_2PI;
-      }
-
-      // 速度の計算
-      stp_motctrl->act_vel_1 = delta_pos / stp_Prv->delta_time_1;
-
-      // 前回値の保存
-      stp_Prv->past_pos1 = stp_motctrl->act_pos_1;
-      break;
-
-    case MOTID_2:
-      delta_pos = stp_motctrl->act_pos_2 - stp_Prv->past_pos2;
-
-      // 0またぎの処理
-      if (delta_pos > USER_2PI) {
-        delta_pos -= USER_2PI;
-      } else if (delta_pos < -USER_2PI) {
-        delta_pos += USER_2PI;
-      }
-
-      // 速度の計算
-      stp_motctrl->act_vel_2 = delta_pos / stp_Prv->delta_time_2;
-
-      // 前回値の保存
-      stp_Prv->past_pos2 = stp_motctrl->act_pos_2;
-      break;
-
-    default:
-      break;
+  // 0またぎの処理
+  if (delta_pos > USER_2PI) {
+    delta_pos -= USER_2PI;
+  } else if (delta_pos < -USER_2PI) {
+    delta_pos += USER_2PI;
   }
+
+  // 速度の計算
+  stp_motctrl->act_vel = delta_pos / stp_Prv->delta_time;
+
+  // 前回値の保存
+  stp_Prv->past_pos = stp_motctrl->act_pos;
 }
 
 /******************************************************************************
@@ -337,7 +262,7 @@ bool STSSendData(byte arr[], int len) {
  *****************************************************************************/
 bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
                    unsigned long timeout, MotID_t id) {
-  st_motctrl *stp_motctrl = &stg_motctrl;
+  st_motctrl *stp_motctrl = &stg_motctrl[id];
   static int temp_ang = 0;
   unsigned long startTime = micros();
   int receivedBytes = 0;
@@ -351,7 +276,7 @@ bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
     }
     // タイムアウトチェック
     if (micros() - startTime > timeout) {
-      stp_motctrl->act_pos_2 = 0;
+      stg_motctrl[MOTID_2].act_pos = 0;
       return false;  // タイムアウト
     }
   }
@@ -361,12 +286,12 @@ bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
   // 4095分解能をradへ変換
   switch (id) {
     case MOTID_1:
-      stp_motctrl->act_pos_1 = USER_2PI * (float(temp_ang) / kMotResol);
+      stp_motctrl->act_pos = USER_2PI * (float(temp_ang) / kMotResol);
       break;
 
     case MOTID_2:
       // 方向反転
-      stp_motctrl->act_pos_2 =
+      stp_motctrl->act_pos =
           USER_2PI * (float(~(temp_ang) + kMotResol) / kMotResol);
       break;
     default:

@@ -18,15 +18,6 @@
  * Typedef definitions
  *****************************************************************************/
 typedef struct {
-  float act_pos_1;
-  float act_vel_1;
-
-  float act_pos_2;
-  float act_vel_2;
-
-  float test;
-  float testtime;
-
   float act_pos;
   float act_trq;
   float act_vel;
@@ -35,7 +26,7 @@ typedef struct {
 /******************************************************************************
  * Global variables
  *****************************************************************************/
-extern st_motctrl stg_motctrl;
+extern st_motctrl stg_motctrl[kMotNum];
 
 /******************************************************************************
  * Global functions
