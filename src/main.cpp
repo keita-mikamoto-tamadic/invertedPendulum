@@ -42,7 +42,6 @@ void setup() {
   fsp_timer.setup_overflow_irq();
   fsp_timer.open();
   fsp_timer.start();
-  /* ********************************* */
 
   // Motor setup function
   MotSetup();
@@ -90,11 +89,11 @@ void loop() {
              stp_motctrl->actVel_1);
 
   // IMU用の不感帯
-  if (stp_imu->pitch > -0.02 && stp_imu->pitch < 0.02) stp_lqr->refTorq = 0;
+  if (-0.02 < stp_imu->pitch && stp_imu->pitch < 0.02) stp_lqr->refTorq = 0;
 
   // モータートルク印可
-  MotTorqWrite(stp_lqr->refTorq, 1);
-  MotTorqWrite(-(stp_lqr->refTorq), 2);
+  MotTorqWrite(stp_lqr->refTorq, MOT1);
+  MotTorqWrite(-(stp_lqr->refTorq), MOT2);
 
   // MotAllTest(500,2);
   end = micros();

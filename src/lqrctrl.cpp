@@ -34,6 +34,6 @@ st_lqr stg_lqr;
 void LQRcontrol(float pitch, float pitch_gyro, float pos, float vel) {
   st_lqr *stp_lqr = &stg_lqr;
 
-  stp_lqr->refTorq =
-      -((F1LQR * pitch) + (F2LQR * pitch_gyro) + (F3LQR * pos) + (F4LQR * vel));
+  stp_lqr->refTorq = -((kF1Lqr * pitch) + (kF2Lqr * pitch_gyro) +
+                       (kF3Lqr * pos) + (kF4Lqr * vel));
 }

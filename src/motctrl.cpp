@@ -13,7 +13,6 @@
 /******************************************************************************
  * Macro definitions
  *****************************************************************************/
-#define STS_TIMEOUT 500
 
 /*******************************************************************************
  * Global variables and functions
@@ -26,13 +25,13 @@ void MotPosVelRead(int id);
 // structure defined in header file to give global scope
 // typedef struct {
 //   float actTorq;
-// 
+//
 //   float actPos_1;
 //   float actVel_1;
-// 
+//
 //   float actPos_2;
 //   float actVel_2;
-// 
+//
 //   float test;
 //   float testtime;
 // } st_motctrl;
@@ -102,30 +101,27 @@ void MotAllTest(float torq, int id) {
  *                id - モータID
  * Return Value : none
  *****************************************************************************/
-/* リミットトルクは0.441Nm */
-/* 0.0515Nm以下はモータ動作不可なのでトルク0とする */
+// リミットトルクは0.441Nm
+// 0.0515Nm以下はモータ動作不可なのでトルク0とする
 void MotTorqWrite(float torq, int id) {
   static int conv_torq = 0;
 
-  /* トルクをSTS3032の指令値へ変換 */
-  /* 2439 * トルク （Nm）+ 50 */
-  /*     if (torq > 0)
-      {
-        conv_torq = (int)(MOTCURGAIN * torq + 50);
-      }
-      else if(torq < 0)
-      {
-        conv_torq = (int)(MOTCURGAIN * torq - 50);
-      }
-      else conv_torq = 0; */
+  // トルクをSTS3032の指令値へ変換
+  // 2439 * トルク （Nm）+ 50
+  //   if (torq > 0) {
+  //     conv_torq = (int)(kMotCurGain * torq + 50);
+  //   } else if (torq < 0) {
+  //     conv_torq = (int)(kMotCurGain * torq - 50);
+  //   } else
+  //     conv_torq = 0;
 
-  conv_torq = (int)(MOTCURGAIN * torq);
+  conv_torq = (int)(kMotCurGain * torq);
 
-  /* 飽和 */
+  // 飽和
   if (conv_torq >= 1000) conv_torq = 1000;
   if (conv_torq <= -1000) conv_torq = -1000;
 
-  /* モータへ書き込み */
+  // モータへ書き込み
   STSWriteTorq((byte)id, conv_torq);
 }
 
@@ -201,9 +197,10 @@ void STSWriteTorq(byte id, int torq) {
  * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
-/* リクエストデータの生成と送信 */
 void STSReqPos(int id) {
-  byte message[8];                       // コマンドパケットを作成
+  const int kStsTimeOut = 500;
+  byte message[8];  // コマンドパケットを作成
+
   message[0] = 0xFF;                     // ヘッダ
   message[1] = 0xFF;                     // ヘッダ
   message[2] = (byte)id;                 // サーボID
@@ -217,18 +214,18 @@ void STSReqPos(int id) {
   STSSendData(message, 8);
 
   // リクエストデータの受信完了まで待つ
-  STSReciveData(&Serial1, buffer, 8, STS_TIMEOUT, id);
-  /* delay入れないとバグる */
+  STSReciveData(&Serial1, buffer, 8, kStsTimeOut, id);
+  // delay入れないとバグる
   // delayMicroseconds(50);
 }
 
 /******************************************************************************
  * Function Name: STSCalcVel
  * Description  : 速度の算出
+ *                コマンド送受信は遅いので速度は計算
  * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
-/* コマンド送受信は遅いので速度は計算 */
 void STSCalcVel(int id) {
   st_Prv *stp_Prv = &sts_Prv;
   st_motctrl *stp_motctrl = &stg_motctrl;
@@ -326,10 +323,10 @@ bool STSReciveData(HardwareSerial *serial_port, byte *buffer, int byteCount,
   temp_ang = int(buffer[6]) * 256 + int(buffer[5]);
   // 4095分解能をradへ変換
   if (id == 1) {
-    stp_motctrl->actPos_1 = 2 * PI * (float(temp_ang) / MOTRESOL);
+    stp_motctrl->actPos_1 = USER_2PI * (float(temp_ang) / kMotResol);
   } else if (id == 2) {
     // 方向反転
-    stp_motctrl->actPos_2 = 2 * PI * (float(~(temp_ang) + MOTRESOL) / MOTRESOL);
+    stp_motctrl->actPos_2 = USER_2PI * (float(~(temp_ang) + kMotResol) / kMotResol);
   }
 
   return true;

@@ -12,25 +12,32 @@
 /******************************************************************************
  * Macro definitions
  *****************************************************************************/
-
-/* サーボパラメータ */
+// サーボパラメータ
 #define MOT1 1
 #define MOT2 2
-#define MOTRESOL 4095
 
-/* ロボットパラメータ */
-#define MOTNUM 2
+// 算術定数
+#define USER_PI 3.14159265358979323846
+#define USER_2PI (2 * USER_PI)
 
-#define F1LQR -4.207
-#define F2LQR -0.596
-#define F3LQR -0.063
-#define F4LQR -0.082
+/******************************************************************************
+ * Typedef definitions
+ *****************************************************************************/
+typedef enum { MOTID_0 = 0U, MOTID_1, MOTID_NONE } MotID_t;
 
-#define MOTCURGAIN 2439
+/*******************************************************************************
+ * Global variables and functions
+ *****************************************************************************/
+// LQR制御用定数
+const float kF1Lqr = -4.207;
+const float kF2Lqr = -0.596;
+const float kF3Lqr = -0.063;
+const float kF4Lqr = -0.082;
 
-#define ANGOFFS 0.122 /* 重心ずれの補正[rad] */
-
-#define USER_PI (3.14159265358979323846f)
-#define USER_2PI (USER_PI * 2.0f)
+// モータ制御用定数
+const int kMotNum = 2;
+const int kMotResol = 4095;
+const int kMotCurGain = 2439;
+const float kAngOffset = 0.122;  // 重心ずれの補正 [rad]
 
 #endif  // _USERDEFINE_H_

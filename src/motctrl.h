@@ -28,6 +28,10 @@ typedef struct {
 
   float test;
   float testtime;
+
+  float act_pos;
+  float act_trq;
+  float act_vel;
 } st_motctrl;
 
 /******************************************************************************
