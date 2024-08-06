@@ -106,10 +106,10 @@ void get_imu() {
     stp_imu->yaw = rpy[0];
     stp_imu->roll = rpy[2];
     // ANGOFFSの計算はここでしないとloopに入れるとバグる
-    // stp_imu->pitch = rpy[1] - kAngOffset;
-    stp_imu->pitch = rpy[1];
+    stp_imu->pitch = rpy[1] - kAngOffset;
+    // stp_imu->pitch = rpy[1];
 
-    // 角速度取得[rad/s]
+    // 角速度取得 [rad/s]
     mpu.dmpGetGyro(&rpy_gyro, fifoBuffer);
     stp_imu->pitch_gyro = (float)rpy_gyro.y * USER_2PI / 360.0;
   }

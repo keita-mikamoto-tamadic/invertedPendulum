@@ -68,47 +68,53 @@ void timer_callback([[maybe_unused]] timer_callback_args_t *arg) {}
  * Return Value : none
  *****************************************************************************/
 void loop() {
-  // 時間計測用
-  float start, end;
-  // start = micros();
-  // end = micros();
+  st_imu *stp_imu = &stg_imu;
+
+  // USBシリアル通信用
   static bool debug = true;
 
-  st_imu *stp_imu = &stg_imu;
-  st_lqr *stp_lqr = &stg_lqr;
-  //   st_motctrl *stp_motctrl = &stg_motctrl;
+  // 時間計測用
+  float start, end;
+  // 計測したい区間を下記処理で挟み、end -start の結果が実行時間
+  // start = micros();
+  // end = micros();
+
+  start = micros();
 
   // IMU:角度・角速度取得
   get_imu();
-  start = micros();
 
   // STS3032:位置・角速度取得
   MotPosVelRead(MOTID_1);
   MotPosVelRead(MOTID_2);
 
   // トルク計算
-  LQRcontrol(stp_imu->pitch, stp_imu->pitch_gyro, stg_motctrl[MOTID_1].act_pos,
-             stg_motctrl[MOTID_1].act_vel);
-
-  // IMU用の不感帯
-  if (-0.02 < stp_imu->pitch && stp_imu->pitch < 0.02) stp_lqr->refTorq = 0;
+  LQRcontrol(MOTID_1);
+  LQRCtrlTrqRef(MOTID_2);
 
   // モータートルク印可
-  MotTorqWrite(stp_lqr->refTorq, MOTID_1);
-  MotTorqWrite(-(stp_lqr->refTorq), MOTID_2);
+  MotTorqWrite(MOTID_1);
+  MotTorqWrite(MOTID_2);
 
-  // MotAllTest(500,2);
   end = micros();
 
+  // MotAllTest(500,2);
+
   if (debug == true) {
+    Serial.print("act_pos_1: ");
     Serial.print(stg_motctrl[MOTID_1].act_pos);
-    Serial.print(" ; ");
-    Serial.print(String(stg_motctrl[MOTID_2].act_vel, 6));
-    Serial.print(" ; ");
-    Serial.print(stp_imu->pitch);
-    Serial.print(" ; ");
-    Serial.print(String(stp_imu->pitch_gyro, 6));
-    Serial.print(" ; ");
-    Serial.println(end - start);
+    Serial.print(" [rad], act_pos_2: ");
+    Serial.print(stg_motctrl[MOTID_2].act_pos);
+    Serial.print(" [rad], act_vel_1: ");
+    Serial.print(stg_motctrl[MOTID_1].act_vel);
+    Serial.print(" [rad/s], act_vel_2: ");
+    Serial.print(stg_motctrl[MOTID_2].act_vel);
+    Serial.print(" [rad/s], imu_pitch: ");
+    Serial.print(stg_imu.pitch);
+    Serial.print(" [rad], imu_pitch_gyro: ");
+    Serial.print(stg_imu.pitch_gyro);
+    Serial.print(" [rad/s], 処理時間: ");
+    Serial.print(end - start);
+    Serial.println(" [us]");
   }
 }

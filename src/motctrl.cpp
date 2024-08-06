@@ -7,6 +7,7 @@
  *****************************************************************************/
 
 #include <Wire.h>
+#include <lqrctrl.h>
 #include <motctrl.h>
 #include <userdefine.h>
 
@@ -20,7 +21,7 @@
 void MotSetup(MotID_t id);
 void StartSerial1(void);
 void MotAllTest(float torq, MotID_t id);
-void MotTorqWrite(float torq, int motch);
+void MotTorqWrite(MotID_t id);
 void MotPosVelRead(MotID_t id);
 
 // structure defined in header file to give global scope
@@ -90,32 +91,25 @@ void MotAllTest(float torq, MotID_t id) {
 /******************************************************************************
  * Function Name: MotTorqWrite
  * Description  : 指定したモータにトルクを書き込む
- * Arguments    : torq - トルク値
- *                id - モータID
+ * Arguments    : id - モータID
  * Return Value : none
  *****************************************************************************/
 // リミットトルクは0.441Nm
 // 0.0515Nm以下はモータ動作不可なのでトルク0とする
-void MotTorqWrite(float torq, MotID_t id) {
-  static int conv_torq = 0;
+void MotTorqWrite(MotID_t id) {
+  st_lqr *stp_lqr = &stg_lqr[id];
+  static int conv_trq = 0;
 
   // トルクをSTS3032の指令値へ変換
-  // 2439 * トルク （Nm）+ 50
-  //   if (torq > 0) {
-  //     conv_torq = (int)(kMotCurGain * torq + 50);
-  //   } else if (torq < 0) {
-  //     conv_torq = (int)(kMotCurGain * torq - 50);
-  //   } else
-  //     conv_torq = 0;
-
-  conv_torq = (int)(kMotCurGain * torq);
+  // トルク = 2439 * トルク [Nm]
+  conv_trq = (int)(kMotCurGain * stp_lqr->ref_trq);
 
   // 飽和
-  if (conv_torq >= 1000) conv_torq = 1000;
-  if (conv_torq <= -1000) conv_torq = -1000;
+  if (conv_trq >= 1000) conv_trq = 1000;
+  if (conv_trq <= -1000) conv_trq = -1000;
 
   // モータへ書き込み
-  STSWriteTorq(id, conv_torq);
+  STSWriteTorq(id, conv_trq);
 }
 
 /******************************************************************************

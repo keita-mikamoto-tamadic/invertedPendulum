@@ -34,7 +34,7 @@ extern st_motctrl stg_motctrl[kMotNum];
 extern void MotSetup(MotID_t id);
 extern void StartSerial1(void);
 extern void MotAllTest(float torq, MotID_t id);
-extern void MotTorqWrite(float torq, MotID_t id);
+extern void MotTorqWrite(MotID_t id);
 extern void MotPosVelRead(MotID_t id);
 
 #endif  // _MOTCTRL_H_

@@ -9,21 +9,24 @@
 #ifndef _LQRCTRL_H_
 #define _LQRCTRL_H_
 
+#include <userdefine.h>
+
 /******************************************************************************
  * Typedef definitions
  *****************************************************************************/
 typedef struct {
-  float refTorq;
+  float ref_trq;
 } st_lqr;
 
 /******************************************************************************
  * Global variables
  *****************************************************************************/
-extern st_lqr stg_lqr;
+extern st_lqr stg_lqr[kMotNum];
 
 /******************************************************************************
  * Global functions
  *****************************************************************************/
-extern void LQRcontrol(float pitch, float pitch_gyro, float pos, float vel);
+extern void LQRcontrol(MotID_t id);
+extern void LQRCtrlTrqRef(MotID_t id);
 
 #endif  // _LQRCTRL_H_

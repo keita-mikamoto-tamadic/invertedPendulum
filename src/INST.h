@@ -20,7 +20,7 @@
 #define INST_SYNC_READ 0x82
 #define INST_SYNC_WRITE 0x83
 
-// 波特率定义
+// ボーレート定義
 #define _1M 0
 #define _0_5M 1
 #define _250K 2
